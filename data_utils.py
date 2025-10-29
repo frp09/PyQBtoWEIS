@@ -109,6 +109,16 @@ def load_and_map_stats(ss_paths, mapping, drop_unmapped=True, verbose=False):
         
     return stats_raw, stats_mapped
 
+def load_DELs(del_paths):
+
+    DELs_raw = {}
+
+    for i, path in enumerate(del_paths):
+        df = read_df(path)
+        DELs_raw[i] = df
+        
+    return DELs_raw
+
 def load_and_map_timeseries(ts_paths, mapping, drop_unmapped=True, verbose=False):
 
     ts_raw, ts_mapped = {}, {}

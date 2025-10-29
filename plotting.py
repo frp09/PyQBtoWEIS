@@ -138,8 +138,8 @@ def plot_spanwise_aero(stats_mapped, spanwise_channels, span_map, labels, colors
                 if show_extrema and df_max is not None and df_min is not None:
                     y_max = df_max.loc[lbl, list(matching_cols)].values
                     y_min = df_min.loc[lbl, list(matching_cols)].values
-                    ax.scatter(spans, y_max, edgecolor=colors[j], color='none', marker='^')
-                    ax.scatter(spans, y_min, edgecolor=colors[j], color='none', marker='v')
+                    #ax.scatter(spans, y_max, edgecolor=colors[j], color='none', marker='^')
+                    #ax.scatter(spans, y_min, edgecolor=colors[j], color='none', marker='v')
 
             except Exception as e:
                 print(f"Failed to plot {chan} for dataset {j}: {e}")
@@ -168,7 +168,7 @@ def plot_psd(ax, df, channel, fs, style, label, label_map=None):
     freqs, psd = calcPSD(signal, fs, nperseg=int(len(signal)/2), noverlap=0.5)
 
     ax.plot(freqs, psd, label=label, **style, linewidth=1)
-    ax.set_xlim([0.0, 2.0])
+    ax.set_xlim([0.0, 5.0])
     ax.set_ylabel(label_map.get(channel, channel) if label_map else channel)
     ax.tick_params(axis='both', labelsize='large')
     ax.grid(linestyle=':', color='gray')

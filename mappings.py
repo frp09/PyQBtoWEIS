@@ -25,6 +25,7 @@ qblade_to_openfast_map = {
     'NP Wave Elevation': 'Wave1Elev',
     'X_b RootBend. Mom. BLD_1': 'RootMxb1',
     'Y_b RootBend. Mom. BLD_1': 'RootMyb1',
+    'Z_b RootBend. Mom. BLD_1': 'RootMzb1',
     'Z_b Rot.Def. BLD_1 pos 1.000': 'TipRzb1',
     'Aero. Power Coefficient': 'RtAeroCp',
     'Aero. Power': 'RtAeroPwr',
