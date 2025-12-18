@@ -3,6 +3,7 @@ from matplotlib.ticker import ScalarFormatter
 import re
 import numpy as np
 import scipy.signal as signal
+import pandas as pd
 
 def plot_stat_vs_wind(ax, data, x_col, y_col, style, label):
     x = data[x_col]['mean']
@@ -21,6 +22,178 @@ def plot_DEL_vs_wind(ax, data_st, data_DEL, x_col, y_col, style, label):
 
     ax.plot(x, y_mean, label=label, **style)
     ax.grid(linestyle =':', color = 'gray')
+
+    
+
+
+#def bin_sims_by_mean_wind_speed_pd(
+#    data,
+#    wind_speed_channel,
+#    value_channel,
+#    bin_width=None,
+#    min_count=1,
+#):
+#    """
+#    Bin simulations by mean wind speed computed from a channel (pandas-optimized).
+#
+#    Parameters
+#    ----------
+#    sims : list
+#        List of simulation dicts or objects with channel data.
+#    wind_speed_channel : str
+#        Channel name used to compute mean wind speed per simulation.
+#    value_channel : str
+#        Channel name whose mean value is aggregated per bin.
+#    bin_width : float, optional
+#        Wind speed bin width. If None, uses Freedman–Diaconis rule.
+#    min_count : int, optional
+#        Minimum number of simulations required per bin.
+#
+#    Returns
+#    -------
+#    pandas.DataFrame with columns:
+#        - ws_center
+#        - mean_of_means
+#        - min
+#        - max
+#        - count
+#    """
+#
+#    ws = data[wind_speed_channel]['mean']
+#    val = data[value_channel]['mean']
+#
+#    if ws.empty:
+#        raise ValueError("No valid simulations found")
+#
+#    # --- Automatic bin width (Freedman–Diaconis) ---
+#    if bin_width is None:
+#        iqr = ws.quantile(0.75) - ws.quantile(0.25)
+#        bin_width = 2 * iqr / np.cbrt(len(df))
+#
+#        if bin_width <= 0 or not np.isfinite(bin_width):
+#            bin_width = (ws.max() - ws.min()) / 10
+#
+#    # --- Create bins ---
+#    bins = np.arange(
+#        ws.min() - bin_width/2,
+#        ws.max() + bin_width/2,
+#        bin_width,
+#    )
+#
+#    
+#    print(bins)
+#
+#    data['ws_bin'] = pd.cut(ws, bins=bins, include_lowest=True)
+#
+#    # --- Aggregate ---
+#    grouped = (
+#        data.groupby("ws_bin", observed=True)
+#        .mean()
+#        .reset_index(drop=True)
+#    )
+#
+#    ## --- Enforce minimum bin count ---
+#    #grouped = grouped[grouped["count"] >= min_count]
+#
+#    return grouped
+
+import numpy as np
+import pandas as pd
+
+
+def bin_sims_by_mean_wind_speed_pd(
+    data,
+    wind_speed_channel,
+    value_channel,
+    min_count=1,
+    gap_factor=4.0,
+    tol = 0.1,
+):
+    """
+    Cluster simulations by mean wind speed using adaptive gap detection.
+
+    This replaces fixed-width binning and is robust to uneven wind-speed spacing.
+
+    Parameters
+    ----------
+    data : pandas.DataFrame
+        Stats dataframe (rows = simulations).
+    wind_speed_channel : str
+        Channel name used to compute mean wind speed per simulation.
+    value_channel : str
+        Channel name whose mean value is aggregated per cluster.
+    min_count : int, optional
+        Minimum number of simulations required per cluster.
+    gap_factor : float, optional
+        Multiplier for median gap used to detect cluster boundaries.
+
+    Returns
+    -------
+    pandas.DataFrame
+        Clustered statistics (mean of means).
+    """
+
+    # --- Extract data ---
+    ws = data[wind_speed_channel]["mean"]
+    val = data[value_channel]["mean"]
+
+    if ws.empty:
+        raise ValueError("No valid simulations found")
+
+    # --- Sort wind speeds ---
+    order = np.argsort(ws.values)
+    ws_sorted = ws.values[order]
+
+    # --- Compute gaps ---
+    gaps = np.diff(ws_sorted)
+    gaps_m = gaps[(gaps > tol)]
+    median_gap = np.median(gaps_m)
+
+    print(f"Median gap: {median_gap}")
+    print(gaps)
+
+    # --- Handle degenerate cases ---
+    if median_gap == 0 or not np.isfinite(median_gap):
+        data = data.copy()
+        data["ws_cluster"] = ws.mean()
+    else:
+        # --- Detect cluster boundaries ---
+        split_idx = np.where(gaps > gap_factor * median_gap)[0]
+
+        cluster_labels = np.zeros(len(ws_sorted), dtype=int)
+        cluster_id = 0
+        start = 0
+
+        for idx in split_idx:
+            end = idx + 1
+            cluster_labels[start:end] = cluster_id
+            cluster_id += 1
+            start = end
+
+        cluster_labels[start:] = cluster_id
+
+        # --- Map back to original order ---
+        labels = np.empty_like(cluster_labels)
+        labels[order] = cluster_labels
+
+        data = data.copy()
+        data["ws_cluster"] = labels
+
+    # --- Aggregate ---
+    grouped = (
+        data.groupby("ws_cluster", observed=True)
+        .mean()
+        .reset_index(drop=True)
+    )
+
+    # --- Optional: enforce minimum count ---
+    if min_count > 1:
+        counts = data.groupby("ws_cluster").size().values
+        grouped = grouped[counts >= min_count]
+
+    return grouped
+
+
 
 def plot_spanwise_comparison(stats_mapped, spanwise_channels, labels, colors, linestyles, fig, axs, sim_label, title_prefix="", show_extrema=False):
     
