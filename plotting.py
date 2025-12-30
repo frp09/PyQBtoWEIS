@@ -326,9 +326,9 @@ def plot_spanwise_aero(stats_mapped, spanwise_channels, span_map, labels, colors
     handles, labels = axs[0].get_legend_handles_labels()
     add_shared_legend(fig, handles, labels)
 
-def add_shared_legend(fig, handles, labels):
+def add_shared_legend(fig, handles, labels, upper_margin = 0.85):
     fig.legend(handles, labels, loc='upper center', bbox_to_anchor=(0.5, 0.98), ncol=3, fontsize='large')
-    fig.tight_layout(rect=[0, 0, 1, 0.85])
+    fig.tight_layout(rect=[0, 0, 1, upper_margin])
 
 def calcPSD(channel, samplingfreq, nperseg, noverlap):
     f, PSD=signal.welch(channel, samplingfreq, nperseg=nperseg, noverlap=noverlap)
