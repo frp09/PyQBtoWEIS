@@ -43,6 +43,7 @@ qblade_to_openfast_map = {
     r"Drag Coefficient BLD_1 PAN_(\d+)": r'B1Cd_n\1',
     r"Drag Coefficient BLD_2 PAN_(\d+)": r'B2Cd_n\1',
     r"Drag Coefficient BLD_3 PAN_(\d+)": r'B3Cd_n\1',
+    r"Reynolds Number BLD_1 PAN_(\d+)": r'B1Re_n\1',
     #r"Y_c Mom. BLD_1 pos": "",
     r"X_h For. Hub Const.": 'LSShftFxh',
     r"X_s For. Shaft Const.": 'LSShftFxa',
@@ -88,6 +89,12 @@ qblade_to_openfast_map = {
     r'X_c Rot.Def. BLD_1 pos (\d+\.\d+)':  r'RDxc1_\1',
     r'Y_c Rot.Def. BLD_1 pos (\d+\.\d+)':  r'RDyc1_\1',
     r'Z_c Rot.Def. BLD_1 pos (\d+\.\d+)':  r'RDzc1_\1',
+    r'X_l For. TWR pos (\d+\.\d+)': r'TwrFx1_\1',
+    r'Y_l For. TWR pos (\d+\.\d+)': r'TwrFy1_\1',
+    r'Z_l For. TWR pos (\d+\.\d+)': r'TwrFz1_\1',
+    r'X_l Mom. TWR pos (\d+\.\d+)': r'TwrMx1_\1',
+    r'Y_l Mom. TWR pos (\d+\.\d+)': r'TwrMy1_\1',
+    r'Z_l Mom. TWR pos (\d+\.\d+)': r'TwrMz1_\1',
     r'X_tb For. TWR Bot. Constr.':  'TwrBsFxt',
     r'Y_tb For. TWR Bot. Constr.':  'TwrBsFyt',
     r'Z_tb For. TWR Bot. Constr.':  'TwrBsFzt',
@@ -106,9 +113,7 @@ qblade_to_openfast_map = {
     'X_c Aero. Force BLD_1 pos (\d+\.\d+)':  r'AeroFxb1_\1',
     'Y_c Aero. Force BLD_1 pos (\d+\.\d+)':  r'AeroFyb1_\1',
     'Aerodynamic Thrust': r'RtAeroTh',
-  
 }
-
 
 qblade_nodes_map = {
     0:	0.0,

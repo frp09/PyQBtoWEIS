@@ -7,22 +7,26 @@ import numpy as np
 import pandas as pd
 #from plot_max_clcd_distribution import get_interpolated_max_efficiency
 
-
 #%% USER INPUTS ------------------------------------------------------------------------
 
+# MED CLD1.6 vs DLC1.1 vs IEA 22  DLC 1.6
 ss_names = [
-    #r'/home/papi/FLOATFARM/QB-WEIS-COUPLE/NEW_MED_OPTIMIZATION/MED15-308_v30.2.11_BOPTSTR/mout_MED15-308_v30.2.12/iteration_0/summary_stats.p',
-    r'/home/papi/FLOATFARM/QB-WEIS-COUPLE/NEW_MED_OPTIMIZATION/MED15-308_v30.2.8_BOPTNSS/iteration_0/summary_stats.p',
-    r'/home/papi/FLOATFARM/QB-WEIS-COUPLE/NEW_MED_OPTIMIZATION/MED15-308_v30.2.7_BOPSTD/mout_MED15-308_v30.2.17/iteration_0/summary_stats.p',
-    #r'/home/papi/FLOATFARM/QB-WEIS-COUPLE/NEW_MED_OPTIMIZATION/MED15-308_v30.2.7_BOPSTD/mout_MED15-308_v30.2.16/iteration_0/summary_stats.p',
-    ]
+    r'/home/papi/FLOATFARM/QB-WEIS-COUPLE/LATEST_MED_v1/UNIFORM/iteration_0/summary_stats.p', 
+]
 
 lables = [
-'DLC1.1',
-'STEADY',
-#'blblbl'
-          ]
+    'IEA 22',
+    'DLC THIN DLC 1.6',
+    'MED THIN DLC 1.1'
+]
 
+
+# Plotting: Spanwise comparisons
+sim_index = [
+  [0,4,8, 12,14,],
+  [0,4,8, 12,14,],
+ # [0,4,8, 12,14,],
+]
 
 savewind = False
 savespan = False
@@ -31,51 +35,8 @@ outn_wnd = r'/home/papi/FLOATFARM/REPORTS/compareSpar_wind_R1R2.svg'
 outn_spn = r'/home/papi/FLOATFARM/REPORTS/compareSpar_span_R1R2_9ms.svg'
 outn_del = r'/home/papi/FLOATFARM/REPORTS/compareSpar_del_R1R2.svg'
 
-# Plotting: Spanwise comparisons
-sim_index = [
- [2, 6, 9, 14, 18, ],
- [0,4,8, 12,14,] ,
- #[0,4,12,14, 16] 
-]
-
 title = ['(a)', '(b)', '(c)', '(d)', '(e)', '(f)']
 title = ['3 m/s', '5 m/s', '7 m/s', '9 m/s', '10 m/s']
-
-channels = ['BldPitch1',
-            #'RtAeroCp',
-            # 'RtAeroCt',
-            #'GenPwr',
-            #'RtAeroPwr', 
-            #'GenTq',
-            'RotSpeed',
-            'RtAeroTh',
-            'TipDxc1',
-            'TipDyc1',
-            'RDzb1_0.950',
-            #'PtfmSurge',
-            #'PtfmPitch',
-            #'RootMyc1',
-            #'TwrBsMyt',
-            #'NcIMUTAxn', 
-            ]
-
-labels = ['BldPitch1',
-            #'RtAeroCp',
-            # 'RtAeroCt',
-            #'GenPwr',
-            #'RtAeroPwr', 
-            #'GenTq',
-            'RotSpeed',
-            'RtAeroTh',
-            'TipDxc1',
-            'TipDyc1',
-            'RDzb1_0.950',
-            #'PtfmSurge',
-            #'PtfmPitch',
-            #'RootMyc1',
-            #'TwrBsMyt',
-            #'NcIMUTAxn', 
-            ]
 
 label_map = {
     'BldPitch1': 'Blade pitch (°)',
@@ -102,9 +63,9 @@ label_map = {
 
 cmap_custom_green = LinearSegmentedColormap.from_list(
     "gray_to_teal", 
-    [ #"#A9A9A9", 
+    [ #"#A9A9A9",
+       "royalblue",  
      '#e05252', 
-     "royalblue", 
      '#4ca64c'
      ]
 )
@@ -117,14 +78,20 @@ stats_raw, stats = load_and_map_stats(ss_names, qblade_to_openfast_map, drop_unm
 del_paths = [ss_names[i].replace('summary_stats.p', 'DELs.p') for i in range(len(ss_names))]
 DELs = load_DELs(del_paths)
 
+model_keys = list(stats.keys())
+active_sim_index = sim_index[:len(model_keys)]
+
+if len(active_sim_index) != len(model_keys):
+    print(f"warning: sim_index defines {len(sim_index)} model rows, but loaded {len(model_keys)} datasets; trimming to loaded datasets")
+
 
 # ---------------------------------------------------------------------------#
 # Plotting: qblade struct spanwise quantities
 
 spanwise_channels = [    
           'RDzb1',
-          'TDxb1',
-          'TDyb1',
+        #   'TDxb1',
+        #   'TDyb1',
           'AeroFyb1',  
           'AeroFxb1',
           'B1Alpha',
@@ -133,21 +100,23 @@ spanwise_channels = [
           #'TDxb1'
           ]
 
-n_models  = len(sim_index)            # i‑dimension
-n_runs    = len(sim_index[0])         # assume all lists same length
+n_models  = len(model_keys)
+n_runs    = len(active_sim_index[0])
 wsds = pd.DataFrame(index=range(n_models),
                     columns=range(n_runs),
                     dtype=float)      # or fill later
 
-for i, idi in enumerate(sim_index):
-    for j, idj in enumerate(sim_index[i]):
+for i in model_keys:
+    for j, idj in enumerate(active_sim_index[i]):
         # locate the row label corresponding to the selected wind speed
-        speed = sim_index[i][j]
+        speed = active_sim_index[i][j]
         token1 = f'_{speed}_'
         token2 = f'_{speed:02}_' if 0 <= speed < 10 else None
+        token3 = f'_{speed:03}_' if 0 <= speed < 10 else (f'_{speed:03}_' if speed < 100 else None)
         lbl = None
         for elm in stats[i].index:
-            if token1 in elm or (token2 and token2 in elm):
+            if token1 in elm or (token2 and token2 in elm) or (token3 and token3 in elm):
+
                 lbl = elm
                 break
         if lbl is None:
@@ -166,21 +135,33 @@ print(wsds)
 
 for channel in spanwise_channels:
 
-    figs, axss = plt.subplots(1, len(sim_index[0]), figsize=(3.5 * len(sim_index[0]), 5))
+    figs, axss = plt.subplots(1, n_runs, figsize=(3.5 * n_runs, 5))
 
-    for i,idi in enumerate(sim_index):   #loop through various cases
+    if n_runs == 1:
+        axss = np.array([axss])
+    else:
+        axss = np.array(axss)
 
-        # wsds already filled above; do not recreate here
-        for j,idj in enumerate(sim_index[i]):   #loop through various wind speeds
+    for j, wind_speed_idx in enumerate(active_sim_index[0]):
+        plot_spanwise_comparison(
+            stats,
+            [channel],
+            lables[:len(model_keys)],
+            colors[:len(model_keys)],
+            linestyles[:len(model_keys)],
+            figs,
+            axss[j],
+            sim_label=wind_speed_idx,
+            title_prefix="Spanwise: ",
+            show_extrema=True,
+        )
 
-            plot_spanwise_comparison({i: stats[i]}, [channel], lables, colors, linestyles, figs, axss[j], sim_label=idj, title_prefix="Spanwise: ", show_extrema=True)
-   
-            axss[j].set_ylabel(label_map.get(channel, channel))
-            axss[j].set_title(title[j])
+        axss[j].set_ylabel(label_map.get(channel, channel))
+        axss[j].set_title(title[j])
 
-            if 'B1Alpha' in channel: 
+        if 'B1Alpha' in channel:
 
-                axss[j].set_ylim(0,25)
+            axss[j].set_ylim(0,25)
     
 if savespan:
     figs.savefig(outn_spn, dpi = 300)
@@ -240,9 +221,9 @@ eff_results = compute_optimal_efficiency_distribution(
 # eff_results DataFrame has columns:
 # ['span', 'reynolds', 'optimal_aoa', 'max_efficiency', 'cl_opt', 'cd_opt']
 
-# Overlay optimal AoA on your existing B1Al pha plots:
-axss[j].plot(eff_results['span'], eff_results['optimal_aoa'], 
-             label='Optimal AoA', linewidth=2, color='red', marker='o')
+## Overlay optimal AoA on your existing B1Al pha plots:
+#axss[j].plot(eff_results['span'], eff_results['optimal_aoa'], 
+#             label='Optimal AoA', linewidth=2, color='red', marker='o')
 
 for aero_channel in aero_channels:
     print(f"\nPlotting {aero_channel} across wind speeds...")

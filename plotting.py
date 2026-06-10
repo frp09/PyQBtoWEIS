@@ -413,7 +413,7 @@ def plot_psd(ax, df, channel, fs, style, label, label_map=None):
     freqs, psd = calcPSD(signal, fs, nperseg=int(len(signal)/2), noverlap=0.5)
 
     ax.plot(freqs, psd, label=label, **style, linewidth=1)
-    ax.set_xlim([0.0, 5.0])
+    ax.set_xlim([0.0, 1.0])
     ax.set_ylabel(label_map.get(channel, channel) if label_map else channel)
     ax.tick_params(axis='both', labelsize='large')
     ax.grid(linestyle=':', color='gray')
@@ -455,4 +455,248 @@ def plot_tss(ax, df, channel, style, label, label_map=None):
     ax.grid(linestyle=':', color='gray')
     ax.yaxis.set_major_formatter(ScalarFormatter())
     ax.yaxis.get_major_formatter().set_powerlimits((0, 3))
+
+
+def export_binned_stats_to_dataframes(binned_stats, labels, export_channels):
+    """
+    Export binned statistics to a dictionary of DataFrames.
+    
+    Converts binned statistics from bin_sims_by_mean_wind_speed_pd() into a user-friendly
+    dictionary structure where each simulation is mapped to a DataFrame containing all
+    requested channels binned by wind speed.
+    
+    Parameters
+    ----------
+    binned_stats : dict
+        Dictionary of binned DataFrames from bin_sims_by_mean_wind_speed_pd().
+        Keys are integer indices (0, 1, 2, ...), values are DataFrames with MultiIndex
+        columns (channel_name, stat_type) where stat_type ∈ {'mean', 'min', 'max', 'std'}.
+    
+    labels : list
+        List of simulation labels corresponding to binned_stats keys.
+        Must have same length as number of keys in binned_stats.
+    
+    export_channels : list
+        List of channel names to include in export (e.g., ['GenPwr', 'RtAeroTh', 'RootMyc1']).
+        If a channel is not found in binned_stats, it is skipped with a warning.
+    
+    Returns
+    -------
+    exported_dict : dict
+        Dictionary with structure:
+        {
+            'label_0': DataFrame with columns MultiIndex (channel, stat_type),
+            'label_1': DataFrame with columns MultiIndex (channel, stat_type),
+            ...
+            '_metadata': DataFrame with bin statistics (count, wind_speed_min/max per bin)
+        }
+        
+        Each DataFrame has:
+        - Index: wind speed values (bins)
+        - MultiIndex columns: (channel, stat_type) where stat_type ∈ {'mean', 'min', 'max', 'std'}
+        - Values: corresponding statistics for each channel and bin
+    
+    Example
+    -------
+    >>> exported_dict = export_binned_stats_to_dataframes(
+    ...     binned_stats, 
+    ...     labels=['Design A', 'Design B'], 
+    ...     export_channels=['GenPwr', 'RootMyc1']
+    ... )
+    >>> 
+    >>> # Access binned power for first design
+    >>> power_data = exported_dict['Design A'][('GenPwr', 'mean')]
+    >>> 
+    >>> # Access metadata about bins
+    >>> metadata = exported_dict['_metadata']
+    >>> print(metadata)
+    """
+    
+    exported_dict = {}
+    stat_types = ['mean', 'min', 'max', 'std']
+    
+    # Process each simulation
+    for j, binned_df in binned_stats.items():
+        if j >= len(labels):
+            print(f"Warning: More simulations ({j+1}) than labels ({len(labels)}). Skipping index {j}.")
+            continue
+        
+        label = labels[j]
+        
+        # Extract wind speed bin centers
+        wind_speeds = binned_df['Wind1VelX']['mean'].values
+        
+        # Build the exported DataFrame
+        data_dict = {}
+        missing_channels = []
+        
+        for channel in export_channels:
+            # Check if channel exists in binned_df
+            channel_cols = [col for col in binned_df.columns if col[0] == channel]
+            
+            if not channel_cols:
+                missing_channels.append(channel)
+                continue
+            
+            # Extract all stat types for this channel
+            for stat_type in stat_types:
+                try:
+                    values = binned_df[channel][stat_type].values
+                    data_dict[(channel, stat_type)] = values
+                except KeyError:
+                    pass
+        
+        if missing_channels:
+            print(f"  Warning: Channels {missing_channels} not found in simulation '{label}'")
+        
+        # Create DataFrame with MultiIndex columns
+        df_export = pd.DataFrame(data_dict, index=wind_speeds)
+        df_export.index.name = 'Wind Speed (m/s)'
+        
+        exported_dict[label] = df_export
+    
+    # Generate metadata
+    metadata = {
+        'num_simulations': len(binned_stats),
+        'num_bins_per_sim': {},
+        'wind_speed_range': {},
+        'num_channels_exported': len(export_channels),
+        'channels_requested': export_channels,
+    }
+    
+    for j, binned_df in binned_stats.items():
+        if j >= len(labels):
+            continue
+        label = labels[j]
+        wind_speeds = binned_df['Wind1VelX']['mean'].values
+        metadata['num_bins_per_sim'][label] = len(wind_speeds)
+        metadata['wind_speed_range'][label] = (wind_speeds.min(), wind_speeds.max())
+    
+    # Convert metadata to DataFrame for easier inspection
+    metadata_df = pd.DataFrame({
+        'key': list(metadata.keys()),
+        'value': [str(v) for v in metadata.values()]
+    }).set_index('key')
+    
+    exported_dict['_metadata'] = metadata_df
+    
+    return exported_dict
+
+
+def save_binned_stats_export(exported_dict, output_paths):
+    """
+    Save exported binned statistics to specified file formats.
+    
+    Supports multiple output formats and can save to multiple files simultaneously.
+    Automatically detects format from file extension.
+    
+    Parameters
+    ----------
+    exported_dict : dict
+        Dictionary returned by export_binned_stats_to_dataframes().
+        Structure: {label: DataFrame, ..., '_metadata': metadata_df}
+    
+    output_paths : str or list
+        Path(s) to save files to. Can be:
+        - Single string: saves to one file
+        - List of strings: saves to multiple files with different formats
+        
+        Supported formats (auto-detected from extension):
+        - .pkl, .pickle : Binary pickle format (preserves MultiIndex)
+        - .csv : Comma-separated values (one file per simulation + metadata)
+        - .xlsx : Excel workbook (one sheet per simulation + metadata sheet)
+        - .h5, .hdf5 : HDF5 hierarchical format (requires tables library)
+    
+    Returns
+    -------
+    None
+    
+    Examples
+    --------
+    >>> # Save to single pickle file
+    >>> save_binned_stats_export(binned_stats_export, 'export.pkl')
+    
+    >>> # Save to multiple formats
+    >>> save_binned_stats_export(binned_stats_export, ['export.pkl', 'export_data.csv'])
+    
+    >>> # Save to HDF5
+    >>> save_binned_stats_export(binned_stats_export, 'export.h5')
+    
+    >>> # Save to Excel (each simulation as a sheet)
+    >>> save_binned_stats_export(binned_stats_export, 'export.xlsx')
+    """
+    
+    # Convert single path to list
+    if isinstance(output_paths, str):
+        output_paths = [output_paths]
+    
+    for output_path in output_paths:
+        ext = output_path.lower().split('.')[-1]
+        
+        try:
+            if ext in ['pkl', 'pickle']:
+                # Save as pickle (preserves MultiIndex columns perfectly)
+                import pickle
+                with open(output_path, 'wb') as f:
+                    pickle.dump(exported_dict, f)
+                print(f"✓ Saved to {output_path} (pickle format)")
+            
+            elif ext == 'csv':
+                # Save each DataFrame to CSV (one per simulation + metadata)
+                import os
+                base_dir = os.path.dirname(output_path) or '.'
+                base_name = os.path.splitext(os.path.basename(output_path))[0]
+                
+                # Save each simulation's data
+                for label, df in exported_dict.items():
+                    if label != '_metadata':
+                        csv_path = os.path.join(base_dir, f"{base_name}_{label}.csv")
+                        df.to_csv(csv_path)
+                        print(f"✓ Saved to {csv_path}")
+                
+                # Save metadata
+                metadata_path = os.path.join(base_dir, f"{base_name}_metadata.csv")
+                exported_dict['_metadata'].to_csv(metadata_path)
+                print(f"✓ Saved metadata to {metadata_path}")
+            
+            elif ext == 'xlsx':
+                # Save to Excel with one sheet per simulation + metadata sheet
+                with pd.ExcelWriter(output_path, engine='openpyxl') as writer:
+                    for label, df in exported_dict.items():
+                        if label != '_metadata':
+                            # Use label as sheet name (max 31 chars for Excel)
+                            sheet_name = str(label)[:31]
+                            df.to_excel(writer, sheet_name=sheet_name)
+                            print(f"✓ Saved '{label}' to sheet in {output_path}")
+                        else:
+                            # Save metadata in separate sheet
+                            exported_dict['_metadata'].to_excel(writer, sheet_name='Metadata')
+                            print(f"✓ Saved metadata to 'Metadata' sheet in {output_path}")
+                print(f"✓ Successfully created Excel workbook: {output_path}")
+            
+            elif ext in ['h5', 'hdf5']:
+                # Save as HDF5 store
+                with pd.HDFStore(output_path, mode='w') as store:
+                    for label, df in exported_dict.items():
+                        # HDF5 doesn't support MultiIndex columns the same way
+                        # Flatten them for storage
+                        if label != '_metadata':
+                            # Store with flattened column names
+                            df_flat = df.copy()
+                            df_flat.columns = [f"{col[0]}_{col[1]}" if isinstance(col, tuple) else col 
+                                              for col in df_flat.columns]
+                            store.put(label.replace(' ', '_'), df_flat, format='table')
+                            print(f"✓ Stored '{label}' in {output_path}")
+                        else:
+                            store.put('_metadata', df, format='table')
+                            print(f"✓ Stored metadata in {output_path}")
+            
+            else:
+                print(f"✗ Unsupported file format: .{ext}")
+                print(f"  Supported formats: .pkl, .csv, .xlsx, .h5, .hdf5")
+        
+        except Exception as e:
+            print(f"✗ Error saving to {output_path}: {str(e)}")
+            import traceback
+            traceback.print_exc()
     

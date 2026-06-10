@@ -6,77 +6,23 @@ import matplotlib.pyplot as plt
 
 # set inputs -----------------------------------------------------------
 
-#files = [
-#    # r'/home/papi/FLOATFARM/QB-WEIS-COUPLE/NEW_MED_OPTIMIZATION/MED15-308_v20.4.0_OPT/mout_MED15-308_v20.4.0/iteration_0/timeseries/MED15-308_v20.4.0_45.p',
-#    # r'/home/papi/FLOATFARM/QB-WEIS-COUPLE/NEW_MED_OPTIMIZATION/MED15-308_v20.4.0_OPT_II/mout_MED15-308_v20.4.0/iteration_8/timeseries/MED15-308_v20.4.0_47.p',
-#    # r'/home/papi/FLOATFARM/QB-WEIS-COUPLE/NEW_MED_OPTIMIZATION/MED15-308_v20.5.0_OPT/mout_MED15-308_v20.5.0/iteration_0/timeseries/MED15-308_v20.5.0_40.p',
-#    # r'/home/papi/FLOATFARM/QB-WEIS-COUPLE/NEW_MED_OPTIMIZATION/MED15-308_v20.5.0_OPT_II/iteration_0/timeseries/MED15-308_v20.5.0_40.p',
-#
-#    r'/home/papi/FLOATFARM/QB-WEIS-COUPLE/NEW_MED_OPTIMIZATION/MED15-308_v20.6.0_OPT/R1/mout_MED15-308_v20.7.0/iteration_318/timeseries/MED15-308_v20.7.0_46.p',
-#    r'/home/papi/FLOATFARM/QB-WEIS-COUPLE/NEW_MED_OPTIMIZATION/MED15-308_v20.6.1_OPT/R1/mout_MED15-308_v20.7.1/iteration_324/timeseries/MED15-308_v20.7.1_46.p',
-#    r'/home/papi/FLOATFARM/QB-WEIS-COUPLE/NEW_MED_OPTIMIZATION/MED15-308_v20.6.2_OPT/R1/mout_MED15-308_v20.7.2/iteration_329/timeseries/MED15-308_v20.7.0_46.p',
-#
-#    ]
-#
-#lables = [
-#   
-#    'middle',
-#    'forward', 
-#    'back',
-#
-#    ]
-#
-#files = [
-#    r'/home/papi/FLOATFARM/QB-WEIS-COUPLE/00_QBTOWEIS_VERIFICATION_IEA22/VALIDATE_RADIANS_DEGREES/mout_SONATA_deg/iteration_0/timeseries/IEA22_turbine_deg_4.p',
-#    r'/home/papi/FLOATFARM/QB-WEIS-COUPLE/00_QBTOWEIS_VERIFICATION_IEA22/VALIDATE_RADIANS_DEGREES/mout_SONATA_rad/iteration_0/timeseries/IEA22_turbine_rad_4.p',
-#
-#    ]
-#
-#lables = [
-#   
-#    'rad',
-#    'deg', 
-#
-#    ]
-
 files = [
-    #r'/home/papi/FLOATFARM/QB-WEIS-COUPLE/NEW_MED_OPTIMIZATION/MED15-308_v20.6.1_OPT/R1/mout_MED15-308_v20.7.1/iteration_0/summary_stats.p',
-    r'/home/papi/FLOATFARM/QB-WEIS-COUPLE/NEW_MED_OPTIMIZATION/MED15-308_v30.1.0_CtrlOpt/R2/mout_MED15-308_v30.1.1/iteration_0/timeseries/MED15-308_v30.1.1_26.p',
-    r'/home/papi/FLOATFARM/QB-WEIS-COUPLE/NEW_MED_OPTIMIZATION/MED15-308_v30.1.0_CtrlOpt/R2/mout_MED15-308_v30.1.1/iteration_115/timeseries/MED15-308_v30.1.1_26.p',
-
-]
+r'/home/papi/FLOATFARM/QB-WEIS-COUPLE/NEW_MED_OPTIMIZATION/MED15-308_v30.2.24_RUN/DLC16_MED15-308_v30.2.24/iteration_0/timeseries/MED15-308_v30.2.24_20.p',
+    ]
 
 lables = [
 
-        'iter_0', 
-        'iter_115'
+        'DLC16', 
           
           ]
 
-files = [
-    #r'/home/papi/FLOATFARM/QB-WEIS-COUPLE/NEW_MED_OPTIMIZATION/MED15-308_v20.6.1_OPT/R1/mout_MED15-308_v20.7.1/iteration_0/summary_stats.p',
-    r'/home/papi/FLOATFARM/QB-WEIS-COUPLE/NEW_MED_OPTIMIZATION/MED15-308_v30.1.0_BOPT/mout_MED15-308_v30.1.2/iteration_0/timeseries/MED15-308_v30.1.2_26.p',
-    r'/home/papi/FLOATFARM/QB-WEIS-COUPLE/NEW_MED_OPTIMIZATION/MED15-308_v30.1.0_BOPT/mout_MED15-308_v30.1.2/iteration_79/timeseries/MED15-308_v30.1.2_26.p',
-    r'/home/papi/FLOATFARM/QB-WEIS-COUPLE/NEW_MED_OPTIMIZATION/MED15-308_v30.1.0_BOPTNSS/mout_MED15-308_v30.1.3/iteration_0/timeseries/MED15-308_v30.1.3_26.p',
-    r'/home/papi/FLOATFARM/QB-WEIS-COUPLE/NEW_MED_OPTIMIZATION/MED15-308_v30.1.0_BOPTNSS/mout_MED15-308_v30.1.3/iteration_208/timeseries/MED15-308_v30.1.3_26.p',
-    r'/home/papi/FLOATFARM/QB-WEIS-COUPLE/NEW_MED_OPTIMIZATION/MED15-308_v30.1.0_BOPTNSS/mout_MED15-308_v30.1.3/iteration_193/timeseries/MED15-308_v30.1.3_26.p',
-
-]
-
-lables = [
-
-        'BOPT_it0', 
-        'BOPT_it79',
-        'BOPTNSS_it0',  
-        'BOPTNSS_it208',
-        'BOPTNSS_it193',
-          ]
 
 colors = ['red', 'black', 'red', 'green', 'orange', 'purple','blue', 'black', 'red', 'green', 'orange', 'purple']
 #colors = ['#e05252', 'royalblue',]# '#4ca64c']
 linestyles = ['-','--','-.',':', '-']
 channels = ['NcIMUTAxn', 'BldPitch1', 'TwrBsMyt', 'RotSpeed', 'GenPwr']#, 'PtfmPitch']# 'TDxb1_1.000', 'RDzb1_1.000']
 #channels = ['TwrBsMyt', 'Wind1VelX', 'BldPitch1', 'RotSpeed', 'GenPwr', 'TipDyc1']
+channels = ['TipDxc1', 'TipDyc1','TwrBsMyt', 'RootMxc1', 'RootMyc1', 'RootMzc1']
 titles = ['(a)', '(b)', '(c)', '(d)', '(e)', '(f)']
 
 label_map = {
